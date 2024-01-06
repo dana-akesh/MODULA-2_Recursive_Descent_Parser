@@ -17,6 +17,7 @@ module myprogram;
 	readreal(x);
 	if num<=max then
 	  num:=num+5
+	  mod 5
 	else
 	  num :=num-5
 	end;
