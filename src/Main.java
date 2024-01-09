@@ -33,11 +33,11 @@ public class Main {
         READINT("readint"),
         READREAL("readreal"),
         READCHAR("readchar"),
-        READIN("readin"),
+        READLN("readln"),
         WRITEINT("writeint"),
         WRITEREAL("writereal"),
         WRITECHAR("writechar"),
-        WRITELN("writein"),
+        WRITELN("writeln"),
         IF("if"),
         THEN("then"),
         ELSE("else"),
@@ -99,9 +99,10 @@ public class Main {
         // Convert list to array
         tokensArray = tokensList.toArray(new String[0]);
 
-        for (int i = 0; i < tokensArray.length; i++) {
+        // Print the tokens
+        /*for (int i = 0; i < tokensArray.length; i++) {
             System.out.println(tokensArray[i]);
-        }
+        }*/
 
         try {
             //System.out.println(tokensArray[index]);
@@ -111,7 +112,6 @@ public class Main {
         } catch (Exception e) {
             e.printStackTrace();
             System.out.println("Exception caught: " + e.getMessage());
-            System.exit(1);
         }
     }
 
@@ -156,15 +156,14 @@ public class Main {
 
     public static void module_decl() {
         module_heading();
-        //todo
         declarations();
-        prodecure_decl();
+        procedure_decl();
         block();
         name();
 
         // check if the last token is a dot
         if (tokensArray[index].toString().equals(Tokens.DOT.toString())) {
-            System.out.println("code parsed successfully");
+            //System.out.println("Status: code parsed successfully");
         } else {
             System.out.println("Expected dot at the end of the file but got " + tokensArray[index].toString() + " instead.");
             System.exit(1);
@@ -175,14 +174,14 @@ public class Main {
     // module-heading → module name ;
     public static void module_heading() {
         String module = tokensArray[index].toString() + tokensArray[index + 1].toString();
-        // todo testing to delete
+        /*
         System.out.println("***********************");
         System.out.println(module);
-        System.out.println("***********************");
+        System.out.println("***********************");*/
 
         if (module.equals(Tokens.MODULE.toString())) {
             index = index + 2;
-            System.out.println(tokensArray[index].toString());
+            System.out.println("Module Name: " + tokensArray[index].toString());
 
             // check if the next token is a valid name
             if (is_valid_name(tokensArray[index].toString()))
@@ -208,21 +207,17 @@ public class Main {
     // declarations function
     public static void declarations() {
         if (tokensArray[index].toString().equals(Tokens.CONST.toString())) {
-            index++;
             const_decl();
         }
         if (tokensArray[index].toString().equals(Tokens.VAR.toString())) {
-            index++;
-            //todo
-            //var_decl();
+            var_decl();
         }
     }
 
     // procedure_decl function
-    public static void prodecure_decl() {
+    public static void procedure_decl() {
         if (tokensArray[index].toString().equals(Tokens.PROCEDURE.toString())) {
-            index++;
-            //procedure_heading();
+            procedure_heading();
             declarations();
             block();
             name();
@@ -230,11 +225,39 @@ public class Main {
                 index++;
             } else {
                 System.out.println("Expected semicolon after the procedure name but got " + tokensArray[index].toString() + " instead.");
+                System.exit(1);
             }
+        } else {
+            System.out.println("Expected procedure keyword but got " + tokensArray[index].toString() + " instead.");
+            System.exit(1);
+        }
+    }
+
+    // procedure_heading function
+    // procedure-heading → procedure name ;
+    public static void procedure_heading() {
+        if (tokensArray[index].toString().equals(Tokens.PROCEDURE.toString())) {
+            index++;
+            if (is_valid_name(tokensArray[index].toString())) {
+                name();
+            } else {
+                System.out.println("Invalid name " + tokensArray[index].toString());
+                System.exit(1);
+            }
+            if (tokensArray[index].toString().equals(Tokens.SEMICOLON.toString())) {
+                index++;
+            } else {
+                System.out.println("Expected semicolon after the procedure name but got " + tokensArray[index].toString() + " instead.");
+                System.exit(1);
+            }
+        } else {
+            System.out.println("Invalid name " + tokensArray[index].toString());
+            System.exit(1);
         }
     }
 
     // block function
+    // block → begin stmt-list end
     public static void block() {
         if (tokensArray[index].toString().equals(Tokens.BEGIN.toString())) {
             index++;
@@ -243,9 +266,163 @@ public class Main {
                 index++;
             } else {
                 System.out.println("Expected end keyword after the begin keyword but got " + tokensArray[index].toString() + " instead.");
+                System.exit(1);
             }
         } else {
             System.out.println("Expected begin keyword but got " + tokensArray[index].toString() + " instead.");
+            System.exit(1);
+        }
+    }
+
+    // var_decl function
+    // var-decl → var var-list | lambda
+    public static void var_decl() {
+        // first case: var var-list
+        if (tokensArray[index].toString().equals(Tokens.VAR.toString())) {
+            index++;
+            var_list();
+        }
+        // second case: lambda, take follow
+        else {
+            // follow of var_decl function
+            // case1: follow of var_decl function is the first of procedure_decl function
+            if (tokensArray[index].toString().equals(Tokens.PROCEDURE.toString())) {
+                index++;
+                procedure_decl();
+            }
+            // case2: follow of var_decl function is the first of procedure_decl function
+            else if (tokensArray[index].toString().equals(Tokens.BEGIN.toString())) {
+                index++;
+                block();
+            } else {
+                System.out.println("Expected var or procedure or begin keyword but got " + tokensArray[index].toString() + " instead.");
+                System.exit(1);
+            }
+        }
+    }
+
+    // var_list function
+    // var-list → ( var-item ;)*
+    public static void var_list() {
+        if (is_valid_name(tokensArray[index].toString())) {
+            var_item();
+            while (tokensArray[index].toString().equals(Tokens.SEMICOLON.toString())) {
+                index++;
+                var_list();
+            }
+        }
+    }
+
+    // var_item function
+    // var-item → name-list : data-type
+    public static void var_item() {
+        name_list();
+        if (tokensArray[index].toString().equals(Tokens.COLON.toString())) {
+            index++;
+            data_type();
+        } else {
+            System.out.println("Expected colon after the name-list but got " + tokensArray[index].toString() + " instead.");
+            System.exit(1);
+        }
+    }
+
+    // stmt_list function
+    // stmt-list → statement (; statement)*
+    public static void stmt_list() {
+        statement();
+        while (tokensArray[index].toString().equals(Tokens.SEMICOLON.toString())) {
+            index++;
+            statement();
+        }
+    }
+
+    // statement function
+    // statement → if-stmt | while-stmt | repeat-stmt | read-stmt | write-stmt | ass-stmt | call-stmt | exit-stmt | lambda
+    public static void statement() {
+        if (tokensArray[index].toString().equals(Tokens.IF.toString())) {
+            if_stmt();
+        } else if (tokensArray[index].toString().equals(Tokens.WHILE.toString())) {
+            while_stmt();
+        } else if (tokensArray[index].toString().equals(Tokens.LOOP.toString())) {
+            repeat_stmt();
+        } else if (tokensArray[index].toString().equals(Tokens.READINT.toString()) || (tokensArray[index].toString() + tokensArray[index + 1].toString()).equals(Tokens.READREAL.toString())
+                || (tokensArray[index].toString() + tokensArray[index + 1].toString()).equals(Tokens.READCHAR.toString()) || (tokensArray[index].toString()).equals(Tokens.READLN.toString())) {
+            read_stmt();
+        } else if (tokensArray[index].toString().equals(Tokens.WRITEINT.toString()) || (tokensArray[index].toString() + tokensArray[index + 1].toString()).equals(Tokens.WRITEREAL.toString())
+                || (tokensArray[index].toString() + tokensArray[index + 1].toString()).equals(Tokens.WRITECHAR.toString()) || (tokensArray[index].toString()).equals(Tokens.WRITELN.toString())) {
+            write_stmt();
+        } else if (tokensArray[index].toString().equals(Tokens.CALL.toString())) {
+            call_stmt();
+        } else if (tokensArray[index].toString().equals(Tokens.EXIT.toString())) {
+            exit_stmt();
+        } else if (is_valid_name(tokensArray[index].toString()) && tokensArray[index].toString().matches("[a-zA-Z_$][a-zA-Z_$0-9]*")) {
+            ass_stmt();
+        } else {
+
+        }
+    }
+
+    // ass-stmt function
+    // ass-stmt → name := exp
+    public static void ass_stmt() {
+        if (is_valid_name(tokensArray[index].toString())) {
+            name();
+            String assign = tokensArray[index].toString() + tokensArray[index + 1].toString();
+            if (assign.equals(Tokens.ASSIGN.toString())) {
+                index = index + 2;
+                exp();
+            } else {
+                System.out.println("Expected := but got " + tokensArray[index].toString() + " instead.");
+                System.exit(1);
+            }
+        } else {
+            System.out.println("Expected name but got " + tokensArray[index].toString() + " instead.");
+            System.exit(1);
+        }
+    }
+
+    // exp function
+    // exp → term ( add-oper term )*
+    public static void exp() {
+        term();
+        while (tokensArray[index].toString().equals(Tokens.PLUS.toString()) || tokensArray[index].toString().equals(Tokens.MINUS.toString())) {
+            index++;
+            term();
+        }
+    }
+
+    // term function
+    // term → factor (mul-oper factor)*
+    public static void term() {
+        factor();
+        while (tokensArray[index].toString().equals(Tokens.MULTIPLY.toString()) || tokensArray[index].toString().equals(Tokens.DIVIDE.toString())
+                || tokensArray[index].toString().equals(Tokens.DIV.toString()) || tokensArray[index].toString().equals(Tokens.MOD.toString())) {
+            index++;
+            factor();
+        }
+    }
+
+    // factor function
+    // factor → ( exp ) | name | value
+    public static void factor() {
+        if (tokensArray[index].toString().equals(Tokens.LPAREN.toString())) {
+            index++;
+            exp();
+            if (tokensArray[index].toString().equals(Tokens.RPAREN.toString())) {
+                index++;
+            } else {
+                System.out.println("Expected right parenthesis after the expression but got " + tokensArray[index].toString() + " instead.");
+                System.exit(1);
+            }
+        } else if (is_valid_name(tokensArray[index].toString()) && tokensArray[index].toString().matches("[a-zA-Z_$][a-zA-Z_$0-9]*")) {
+            name();
+        } else if (tokensArray[index].toString().matches("[0-9]+")) {
+            integer_value();
+        } else if (tokensArray[index].toString().matches("[0-9]+.[0-9]+")) {
+            real_value();
+        } else {
+            System.out.println("Expected name or value or expression but got " + tokensArray[index].toString() + " instead.");
+            System.exit(1);
         }
     }
 
@@ -271,13 +448,14 @@ public class Main {
             index++;
         } else {
             System.out.println("Expected data type but got " + tokensArray[index].toString() + " instead.");
+            System.exit(1);
         }
     }
 
     // const_decl function
     // const-decl → const const-list | lambda
     public static void const_decl() {
-        // first case: const const-list
+        // first case: const const-list aka not lambda
         if (tokensArray[index].toString().equals(Tokens.CONST.toString())) {
             index++;
             const_list();
@@ -288,33 +466,46 @@ public class Main {
             // case1: follow of const_decl function is the first of var_decl function
             if (tokensArray[index].toString().equals(Tokens.VAR.toString())) {
                 index++;
-                //todo
-                //var_decl();
+                var_decl();
             }
-            // case2: follow of const_decl function is the first of procedure_decl function
+            // case2: follow of const_decl function is the first of procedure_decl function if there is no var_decl function
             else if (tokensArray[index].toString().equals(Tokens.PROCEDURE.toString())) {
                 index++;
                 //todo
-                //procedure_decl();
+                procedure_decl();
+            }
+            // case3: follow of const_decl function is the first of block function
+            else if (tokensArray[index].toString().equals(Tokens.BEGIN.toString())) {
+                index++;
+                block();
+            } else {
+                System.out.println("Expected const or var or procedure or begin keyword but got " + tokensArray[index].toString() + " instead.");
+                System.exit(1);
             }
         }
     }
+
 
     // const_list function
     // const-list → (name = value ;)*
     public static void const_list() {
         name();
-        if (tokensArray[index].toString().equals(Tokens.ASSIGN.toString())) {
+        if (tokensArray[index].toString().equals(Tokens.EQUALS.toString())) {
             index++;
             value();
             if (tokensArray[index].toString().equals(Tokens.SEMICOLON.toString())) {
                 index++;
+                if (tokensArray[index].toString().equals(Tokens.VAR.toString())) {
+                    return;
+                }
                 const_list();
             } else {
                 System.out.println("Expected semicolon after the value but got " + tokensArray[index].toString() + " instead.");
+                System.exit(1);
             }
         } else {
             System.out.println("Expected assign operator after the name but got " + tokensArray[index].toString() + " instead.");
+            System.exit(1);
         }
     }
 
@@ -322,13 +513,13 @@ public class Main {
     // value → integer-value | real-value
     public static void value() {
         if (tokensArray[index].toString().matches("[0-9]+")) {
-            index++;
             integer_value();
         } else if (tokensArray[index].toString().matches("[0-9]+.[0-9]+")) {
             index++;
             real_value();
         } else {
             System.out.println("Expected integer or real value but got " + tokensArray[index].toString() + " instead.");
+            System.exit(1);
         }
     }
 
@@ -339,6 +530,7 @@ public class Main {
             index++;
         } else {
             System.out.println("Expected integer value but got " + tokensArray[index].toString() + " instead.");
+            System.exit(1);
         }
     }
 
@@ -349,26 +541,219 @@ public class Main {
             index++;
         } else {
             System.out.println("Expected real value but got " + tokensArray[index].toString() + " instead.");
+            System.exit(1);
+        }
+    }
+
+    // while_stmt function
+    // while-stmt → while condition do stmt-list end
+    public static void while_stmt() {
+        if (tokensArray[index].toString().equals(Tokens.WHILE.toString())) {
+            index++;
+            condition();
+            if (tokensArray[index].toString().equals(Tokens.DO.toString())) {
+                index++;
+                stmt_list();
+                if (tokensArray[index].toString().equals(Tokens.END.toString())) {
+                    index++;
+                } else {
+                    System.out.println("Expected end keyword after the while statement but got " + tokensArray[index].toString() + " instead.");
+                    System.exit(1);
+                }
+            } else {
+                System.out.println("Expected do keyword after the condition but got " + tokensArray[index].toString() + " instead.");
+                System.exit(1);
+            }
+        } else {
+            System.out.println("Expected while keyword but got " + tokensArray[index].toString() + " instead.");
+            System.exit(1);
+        }
+    }
+
+    // repeat_stmt function
+    // repeat-stmt → loop stmt-list until condition
+    public static void repeat_stmt() {
+        if (tokensArray[index].toString().equals(Tokens.LOOP.toString())) {
+            index++;
+            stmt_list();
+            if (tokensArray[index].toString().equals(Tokens.UNTIL.toString())) {
+                index++;
+                condition();
+            } else {
+                System.out.println("Expected until keyword after the stmt-list but got " + tokensArray[index].toString() + " instead.");
+                System.exit(1);
+            }
+        } else {
+            System.out.println("Expected loop keyword but got " + tokensArray[index].toString() + " instead.");
+            System.exit(1);
+        }
+    }
+
+    // read_stmt function
+    // read-stmt → readint ( name-list )  | readreal ( name-list ) | readchar ( name-list ) | readln
+    public static void read_stmt() {
+        if (tokensArray[index].toString().equals(Tokens.READINT.toString())) {
+            index++;
+            if (tokensArray[index].toString().equals(Tokens.LPAREN.toString())) {
+                index++;
+                name_list();
+                if (tokensArray[index].toString().equals(Tokens.RPAREN.toString())) {
+                    index++;
+                } else {
+                    System.out.println("Expected right parenthesis after the namelist but got " + tokensArray[index].toString() + " instead.");
+                    System.exit(1);
+                }
+            } else {
+                System.out.println("Expected left parenthesis after the readint keyword but got " + tokensArray[index].toString() + " instead.");
+                System.exit(1);
+            }
+        } else if ((tokensArray[index].toString() + tokensArray[index + 1].toString()).equals(Tokens.READREAL.toString())) {
+            index = index + 2;
+            if (tokensArray[index].toString().equals(Tokens.LPAREN.toString())) {
+                index++;
+                name_list();
+                if (tokensArray[index].toString().equals(Tokens.RPAREN.toString())) {
+                    index++;
+                } else {
+                    System.out.println("Expected right parenthesis after the namelist but got " + tokensArray[index].toString() + " instead.");
+                    System.exit(1);
+                }
+            } else {
+                System.out.println("Expected left parenthesis after the readreal keyword but got " + tokensArray[index].toString() + " instead.");
+                System.exit(1);
+            }
+        } else if ((tokensArray[index].toString() + tokensArray[index + 1].toString()).equals(Tokens.READCHAR.toString())) {
+            index = index + 2;
+            if (tokensArray[index].toString().equals(Tokens.LPAREN.toString())) {
+                index++;
+                name_list();
+                if (tokensArray[index].toString().equals(Tokens.RPAREN.toString())) {
+                    index++;
+                } else {
+                    System.out.println("Expected right parenthesis after the namelist but got " + tokensArray[index].toString() + " instead.");
+                    System.exit(1);
+                }
+            } else {
+                System.out.println("Expected left parenthesis after the readchar keyword but got " + tokensArray[index].toString() + " instead.");
+                System.exit(1);
+            }
+        } else if ((tokensArray[index].toString()).equals(Tokens.READLN.toString())) {
+            index++;
+        } else {
+            System.out.println("Expected readint or readreal or readchar or readln keyword but got " + tokensArray[index].toString() + " instead.");
+            System.exit(1);
+        }
+    }
+
+    // write_stmt function
+    // write-stmt → writeint ( name_list ) | writereal ( name_list ) | writechar ( name_list ) | writeln
+    public static void write_stmt() {
+        if ((tokensArray[index].toString()).equals(Tokens.WRITEINT.toString())) {
+            index++;
+            if (tokensArray[index].toString().equals(Tokens.LPAREN.toString())) {
+                index++;
+                write_list();
+                if (tokensArray[index].toString().equals(Tokens.RPAREN.toString())) {
+                    index++;
+                } else {
+                    System.out.println("Expected right parenthesis after the namelist but got " + tokensArray[index].toString() + " instead.");
+                    System.exit(1);
+                }
+            } else {
+                System.out.println("Expected left parenthesis after the writeint keyword but got " + tokensArray[index].toString() + " instead.");
+                System.exit(1);
+            }
+        } else if ((tokensArray[index].toString() + tokensArray[index + 1].toString()).equals(Tokens.WRITEREAL.toString())) {
+            index = index + 2;
+            if (tokensArray[index].toString().equals(Tokens.LPAREN.toString())) {
+                index++;
+                write_list();
+                if (tokensArray[index].toString().equals(Tokens.RPAREN.toString())) {
+                    index++;
+                } else {
+                    System.out.println("Expected right parenthesis after the namelist but got " + tokensArray[index].toString() + " instead.");
+                    System.exit(1);
+                }
+            } else {
+                System.out.println("Expected left parenthesis after the writereal keyword but got " + tokensArray[index].toString() + " instead.");
+                System.exit(1);
+            }
+        } else if ((tokensArray[index].toString() + tokensArray[index + 1].toString()).equals(Tokens.WRITECHAR.toString())) {
+            index = index + 2;
+            if (tokensArray[index].toString().equals(Tokens.LPAREN.toString())) {
+                index++;
+                write_list();
+                if (tokensArray[index].toString().equals(Tokens.RPAREN.toString())) {
+                    index++;
+                } else {
+                    System.out.println("Expected right parenthesis after the namelist but got " + tokensArray[index].toString() + " instead.");
+                    System.exit(1);
+                }
+            } else {
+                System.out.println("Expected left parenthesis after the writechar keyword but got " + tokensArray[index].toString() + " instead.");
+                System.exit(1);
+            }
+        } else if (tokensArray[index].toString().equals(Tokens.WRITELN.toString())) {
+            index++;
+        } else {
+            System.out.println("Expected writeint or writereal or writechar or writeln keyword but got " + tokensArray[index].toString() + " instead.");
+            System.exit(1);
+        }
+    }
+
+    // name_list function
+    // name-list → name (, name)*
+    public static void name_list() {
+        name();
+        while (tokensArray[index].toString().equals(Tokens.COMMA.toString())) {
+            index++;
+            name();
+        }
+    }
+
+    // write_list function
+    // write-list → write-item (, write-item)*
+    public static void write_list() {
+        write_item();
+        while (tokensArray[index].toString().equals(Tokens.COMMA.toString())) {
+            index++;
+            write_item();
+        }
+    }
+
+    // write_item function
+    // write-item → name | value
+    public static void write_item() {
+        if (is_valid_name(tokensArray[index].toString()) && tokensArray[index].toString().matches("[a-zA-Z_$][a-zA-Z_$0-9]*")) {
+            name();
+        } else if (tokensArray[index].toString().matches("[0-9]+")) {
+            integer_value();
+        } else if (tokensArray[index].toString().matches("[0-9]+.[0-9]+")) {
+            real_value();
+        } else {
+            System.out.println("Expected name or value but got " + tokensArray[index].toString() + " instead.");
+            System.exit(1);
         }
     }
 
     // relational_oper function
     // relational-oper → < | > | = | <= | >= | |=
     public static void relational_oper() {
-        if (tokensArray[index].toString().equals(Tokens.LARGER_THAN.toString())) { // >
+        if ((tokensArray[index].toString() + tokensArray[index + 1].toString()).equals(Tokens.OR_EQUALS.toString())) { // |=
+            index = index + 2;
+        } else if ((tokensArray[index].toString() + tokensArray[index + 1].toString()).equals(Tokens.SMALLER_THAN_OR_EQUAL.toString())) { // <=
+            index = index + 2;
+        } else if ((tokensArray[index].toString() + tokensArray[index + 1].toString()).equals(Tokens.LARGER_THAN_OR_EQUAL.toString())) { // >=
+            index = index + 2;
+        } else if (tokensArray[index].toString().equals(Tokens.LARGER_THAN.toString())) { // >
             index++;
         } else if (tokensArray[index].toString().equals(Tokens.SMALLER_THAN.toString())) { // <
             index++;
         } else if (tokensArray[index].toString().equals(Tokens.EQUALS.toString())) { // =
             index++;
-        } else if (tokensArray[index].toString().equals(Tokens.LARGER_THAN_OR_EQUAL.toString())) { // >=
-            index++;
-        } else if (tokensArray[index].toString().equals(Tokens.SMALLER_THAN_OR_EQUAL.toString())) { // <=
-            index++;
-        } else if (tokensArray[index].toString().equals(Tokens.OR_EQUALS.toString())) { // |=
-            index++;
         } else { // error
             System.out.println("Expected relational operator but got " + tokensArray[index].toString() + " instead.");
+            System.exit(1);
         }
     }
 
@@ -383,6 +768,7 @@ public class Main {
             index++;
         } else {
             System.out.println("Expected name or value but got " + tokensArray[index].toString() + " instead.");
+            System.exit(1);
         }
     }
 
@@ -412,6 +798,7 @@ public class Main {
 
         } else {
             System.out.println("Expected call keyword but got " + tokensArray[index].toString() + " instead.");
+            System.exit(1);
         }
     }
 
@@ -422,6 +809,7 @@ public class Main {
             index++;
         } else {
             System.out.println("Expected exit keyword but got " + tokensArray[index].toString() + " instead.");
+            System.exit(1);
         }
     }
 
@@ -434,6 +822,7 @@ public class Main {
             index++;
         } else {
             System.out.println("Expected add operator but got " + tokensArray[index].toString() + " instead.");
+            System.exit(1);
         }
     }
 
@@ -450,6 +839,7 @@ public class Main {
             index++;
         } else {
             System.out.println("Expected mul operator but got " + tokensArray[index].toString() + " instead.");
+            System.exit(1);
         }
     }
 
@@ -468,43 +858,35 @@ public class Main {
                     index++;
                 } else {
                     System.out.println("Expected end keyword after the if statement but got " + tokensArray[index].toString() + " instead.");
+                    System.exit(1);
                 }
             } else {
                 System.out.println("Expected then keyword after the condition but got " + tokensArray[index].toString() + " instead.");
+                System.exit(1);
             }
         } else {
             System.out.println("Expected if keyword but got " + tokensArray[index].toString() + " instead.");
+            System.exit(1);
         }
     }
 
     // elseif_part function
     // elseif-part → (elseif condition then stmt-list)*
     public static void elseif_part() {
-        if (tokensArray[index].toString().equals(Tokens.ELSEIF.toString())) {
-            while (tokensArray[index].toString().equals(Tokens.ELSEIF.toString())) {
-                index++;
+        if ((tokensArray[index].toString() + tokensArray[index + 1].toString()).equals(Tokens.ELSEIF.toString())) {
+            while ((tokensArray[index].toString() + tokensArray[index + 1].toString()).equals(Tokens.ELSEIF.toString())) {
+                index = index + 2;
                 condition();
                 if (tokensArray[index].toString().equals(Tokens.THEN.toString())) {
                     index++;
                     stmt_list();
                 } else {
                     System.out.println("Expected then keyword after the condition but got " + tokensArray[index].toString() + " instead.");
+                    System.exit(1);
                 }
             }
         }
-        else {
-            System.out.println("Expected elseif keyword but got " + tokensArray[index].toString() + " instead.");
-        }
     }
-
-/*    public static void term() throws Exception {
-//
-        factor();
-        while (tokensArray[index].equals(Tokens.MULTIPLY.toString()) || tokensArray[index].equals(Tokens.MOD.toString()) || tokensArray[index].equals(Tokens.DIVIDE.toString())) {
-            mul_sign();
-            factor();
-        }k
-    }*/
 
     // else_part function
     // else-part → else stmt-list | lambda
@@ -536,11 +918,11 @@ public class Main {
                 !tokensArray[index].equals(Tokens.SMALLER_THAN.toString()) && !tokensArray[index].equals(Tokens.LARGER_THAN.toString()) &&
                 !tokensArray[index].equals(Tokens.EQUALS.toString()) && !tokensArray[index].equals(Tokens.DOT.toString()) &&
                 !tokensArray[index].equals(Tokens.OR_EQUALS.toString()) && !tokensArray[index].equals(Tokens.READINT.toString()) &&
-                !tokensArray[index].equals(Tokens.READREAL.toString()) && !tokensArray[index].equals(Tokens.READCHAR.toString()) &&
-                !tokensArray[index].equals(Tokens.READIN.toString()) && !tokensArray[index].equals(Tokens.WRITEINT.toString()) &&
-                !tokensArray[index].equals(Tokens.WRITEREAL.toString()) && !tokensArray[index].equals(Tokens.WRITECHAR.toString()) &&
-                !tokensArray[index].equals(Tokens.WRITELN.toString()) && !tokensArray[index].equals(Tokens.THEN.toString()) &&
-                !tokensArray[index].equals(Tokens.ELSE.toString()) && !tokensArray[index].equals(Tokens.ELSEIF.toString()) &&
+                !(tokensArray[index].toString()).equals(Tokens.READREAL.toString()) && !(tokensArray[index].toString()).equals(Tokens.READCHAR.toString()) &&
+                !(tokensArray[index].toString()).equals(Tokens.READLN.toString()) && !tokensArray[index].equals(Tokens.WRITEINT.toString()) &&
+                !(tokensArray[index].toString()).equals(Tokens.WRITEREAL.toString()) && !(tokensArray[index].toString()).equals(Tokens.WRITECHAR.toString()) &&
+                !(tokensArray[index].toString()).equals(Tokens.WRITELN.toString()) && !tokensArray[index].equals(Tokens.THEN.toString()) &&
+                !tokensArray[index].equals(Tokens.ELSE.toString()) && !(tokensArray[index].toString()).equals(Tokens.ELSEIF.toString()) &&
                 !tokensArray[index].equals(Tokens.WHILE.toString()) && !tokensArray[index].equals(Tokens.UNTIL.toString()) &&
                 !tokensArray[index].equals(Tokens.EXIT.toString()) && !tokensArray[index].equals(Tokens.CALL.toString()) &&
                 !tokensArray[index].equals(Tokens.LARGER_THAN_OR_EQUAL.toString()) && !tokensArray[index].equals(Tokens.SMALLER_THAN_OR_EQUAL.toString())) {
