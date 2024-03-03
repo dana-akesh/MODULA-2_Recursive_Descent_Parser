@@ -6,10 +6,10 @@ import java.util.List;
 import java.util.Scanner;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-
+// 1201112 - Dana Akesh
 public class Main {
     static public final String WITH_DELIMITER = "((?<=%1$s)|(?=%1$s))";
-    static String s;
+    static String s, str;
     static Scanner scanner;
     static String[] tokensArray;
     static int index = 0;
@@ -84,7 +84,19 @@ public class Main {
     // Main function
     public static void main(String[] args) throws FileNotFoundException {
         // Read the input file
-        scanner = new Scanner(new File("input.txt"));
+        System.out.println("**Welcome to the Dana Akesh's parser**");
+
+        System.out.println("**Please enter the file name/path: ");
+        Scanner input = new Scanner(System.in);
+        String fileName = input.nextLine();
+        File file = new File(fileName);
+
+        // Check if the file exists
+        if (!file.exists() || !file.isFile() || !file.canRead() || !file.getName().endsWith(".txt")) {
+            System.err.println("File not found");
+            System.exit(1);
+        }
+        scanner = new Scanner(file);
         scanner.useDelimiter("(\\s+)|(" + splitWithDelimiter() + ")");
 
         List<String> tokensList = new ArrayList<>(); // List to store the tokens
@@ -107,12 +119,18 @@ public class Main {
         try {
             //System.out.println(tokensArray[index]);
             module_decl();
+            // check if there are any tokens left
+            if (index < tokensArray.length - 1) {
+                throw new customParserException("Expected end of file but got " + tokensArray[index + 1].toString() + " instead.");
+            }
             System.out.println("Parsing is done successfully");
             scanner.close();
         } catch (Exception e) {
-            e.printStackTrace();
-            System.out.println("Exception caught: " + e.getMessage());
+            System.err.println(e.getMessage());
+            scanner.close();
+            //System.out.println("Exception caught: " + e.getMessage());
         }
+
     }
 
     // Function to split the input string with the delimiters
@@ -154,7 +172,7 @@ public class Main {
 // the first function to start with
 // module-decl → module-heading declarations procedure-decl block name .
 
-    public static void module_decl() {
+    public static void module_decl() throws customParserException {
         module_heading();
         declarations();
         procedure_decl();
@@ -165,14 +183,13 @@ public class Main {
         if (tokensArray[index].toString().equals(Tokens.DOT.toString())) {
             //System.out.println("Status: code parsed successfully");
         } else {
-            System.out.println("Expected dot at the end of the file but got " + tokensArray[index].toString() + " instead.");
-            System.exit(1);
+            throw new customParserException("Expected dot at the end of the file but got " + tokensArray[index].toString() + " instead.");
         }
     }
 
     // module_heading function
     // module-heading → module name ;
-    public static void module_heading() {
+    public static void module_heading() throws customParserException {
         String module = tokensArray[index].toString() + tokensArray[index + 1].toString();
         /*
         System.out.println("***********************");
@@ -184,28 +201,25 @@ public class Main {
             System.out.println("Module Name: " + tokensArray[index].toString());
 
             // check if the next token is a valid name
-            if (is_valid_name(tokensArray[index].toString()))
+            if (is_valid_name(tokensArray[index].toString())) {
                 name();
-            else {
-                System.out.println("Invalid name " + tokensArray[index].toString());
-                System.exit(1);
+            } else {
+                throw new customParserException("Invalid name " + tokensArray[index].toString());
             }
 
             // check if the next token is a semicolon
             if (tokensArray[index].toString().equals(Tokens.SEMICOLON.toString())) {
                 index++;
             } else {
-                System.out.println("Expected semicolon after the module name but got " + tokensArray[index].toString() + " instead.");
-                System.exit(1);
+                throw new customParserException("Expected semicolon after the module name but got " + tokensArray[index].toString() + " instead.");
             }
         } else {
-            System.out.println("Expected module keyword but got " + tokensArray[index].toString() + " instead.");
-            System.exit(1);
+            throw new customParserException("Expected module keyword at the beginning of the file but got " + tokensArray[index].toString() + " instead.");
         }
     }
 
     // declarations function
-    public static void declarations() {
+    public static void declarations() throws customParserException {
         if (tokensArray[index].toString().equals(Tokens.CONST.toString())) {
             const_decl();
         }
@@ -215,7 +229,7 @@ public class Main {
     }
 
     // procedure_decl function
-    public static void procedure_decl() {
+    public static void procedure_decl() throws customParserException {
         if (tokensArray[index].toString().equals(Tokens.PROCEDURE.toString())) {
             procedure_heading();
             declarations();
@@ -224,59 +238,52 @@ public class Main {
             if (tokensArray[index].toString().equals(Tokens.SEMICOLON.toString())) {
                 index++;
             } else {
-                System.out.println("Expected semicolon after the procedure name but got " + tokensArray[index].toString() + " instead.");
-                System.exit(1);
+                throw new customParserException("Expected semicolon after the procedure name but got " + tokensArray[index].toString() + " instead.");
             }
         } else {
-            System.out.println("Expected procedure keyword but got " + tokensArray[index].toString() + " instead.");
-            System.exit(1);
+            throw new customParserException("Expected procedure keyword but got " + tokensArray[index].toString() + " instead.");
         }
     }
 
     // procedure_heading function
     // procedure-heading → procedure name ;
-    public static void procedure_heading() {
+    public static void procedure_heading() throws customParserException {
         if (tokensArray[index].toString().equals(Tokens.PROCEDURE.toString())) {
             index++;
             if (is_valid_name(tokensArray[index].toString())) {
                 name();
             } else {
-                System.out.println("Invalid name " + tokensArray[index].toString());
-                System.exit(1);
+                throw new customParserException("Invalid name " + tokensArray[index].toString());
             }
             if (tokensArray[index].toString().equals(Tokens.SEMICOLON.toString())) {
                 index++;
             } else {
-                System.out.println("Expected semicolon after the procedure name but got " + tokensArray[index].toString() + " instead.");
-                System.exit(1);
+                throw new customParserException("Expected semicolon after the procedure name but got " + tokensArray[index].toString() + " instead.");
             }
         } else {
-            System.out.println("Invalid name " + tokensArray[index].toString());
-            System.exit(1);
+            throw new customParserException("Expected procedure keyword but got " + tokensArray[index].toString() + " instead.");
         }
     }
 
     // block function
     // block → begin stmt-list end
-    public static void block() {
+    public static void block() throws customParserException {
         if (tokensArray[index].toString().equals(Tokens.BEGIN.toString())) {
             index++;
             stmt_list();
             if (tokensArray[index].toString().equals(Tokens.END.toString())) {
                 index++;
             } else {
-                System.out.println("Expected end keyword after the begin keyword but got " + tokensArray[index].toString() + " instead.");
-                System.exit(1);
+                throw new customParserException("Expected end keyword after the begin keyword but got " + tokensArray[index].toString() + " instead.");
             }
         } else {
-            System.out.println("Expected begin keyword but got " + tokensArray[index].toString() + " instead.");
-            System.exit(1);
+            throw new customParserException("Expected begin keyword but got " + tokensArray[index].toString() + " instead.");
         }
     }
 
     // var_decl function
     // var-decl → var var-list | lambda
-    public static void var_decl() {
+    public static void var_decl() throws customParserException {
         // first case: var var-list
         if (tokensArray[index].toString().equals(Tokens.VAR.toString())) {
             index++;
@@ -295,15 +302,14 @@ public class Main {
                 index++;
                 block();
             } else {
-                System.out.println("Expected var or procedure or begin keyword but got " + tokensArray[index].toString() + " instead.");
-                System.exit(1);
+                throw new customParserException("Expected var or procedure or begin keyword but got " + tokensArray[index].toString() + " instead.");
             }
         }
     }
 
     // var_list function
     // var-list → ( var-item ;)*
-    public static void var_list() {
+    public static void var_list() throws customParserException {
         if (is_valid_name(tokensArray[index].toString())) {
             var_item();
             while (tokensArray[index].toString().equals(Tokens.SEMICOLON.toString())) {
@@ -315,20 +321,19 @@ public class Main {
 
     // var_item function
     // var-item → name-list : data-type
-    public static void var_item() {
+    public static void var_item() throws customParserException {
         name_list();
         if (tokensArray[index].toString().equals(Tokens.COLON.toString())) {
             index++;
             data_type();
         } else {
-            System.out.println("Expected colon after the name-list but got " + tokensArray[index].toString() + " instead.");
-            System.exit(1);
+            throw new customParserException("Expected colon after the name-list but got " + tokensArray[index].toString() + " instead.");
         }
     }
 
     // stmt_list function
     // stmt-list → statement (; statement)*
-    public static void stmt_list() {
+    public static void stmt_list() throws customParserException {
         statement();
         while (tokensArray[index].toString().equals(Tokens.SEMICOLON.toString())) {
             index++;
@@ -338,7 +343,7 @@ public class Main {
 
     // statement function
     // statement → if-stmt | while-stmt | repeat-stmt | read-stmt | write-stmt | ass-stmt | call-stmt | exit-stmt | lambda
-    public static void statement() {
+    public static void statement() throws customParserException {
         if (tokensArray[index].toString().equals(Tokens.IF.toString())) {
             if_stmt();
         } else if (tokensArray[index].toString().equals(Tokens.WHILE.toString())) {
@@ -364,7 +369,7 @@ public class Main {
 
     // ass-stmt function
     // ass-stmt → name := exp
-    public static void ass_stmt() {
+    public static void ass_stmt() throws customParserException {
         if (is_valid_name(tokensArray[index].toString())) {
             name();
             String assign = tokensArray[index].toString() + tokensArray[index + 1].toString();
@@ -372,18 +377,16 @@ public class Main {
                 index = index + 2;
                 exp();
             } else {
-                System.out.println("Expected := but got " + tokensArray[index].toString() + " instead.");
-                System.exit(1);
+                throw new customParserException("Expected := but got " + tokensArray[index].toString() + " instead.");
             }
         } else {
-            System.out.println("Expected name but got " + tokensArray[index].toString() + " instead.");
-            System.exit(1);
+            throw new customParserException("Expected name but got " + tokensArray[index].toString() + " instead.");
         }
     }
 
     // exp function
     // exp → term ( add-oper term )*
-    public static void exp() {
+    public static void exp() throws customParserException {
         term();
         while (tokensArray[index].toString().equals(Tokens.PLUS.toString()) || tokensArray[index].toString().equals(Tokens.MINUS.toString())) {
             index++;
@@ -393,7 +396,7 @@ public class Main {
 
     // term function
     // term → factor (mul-oper factor)*
-    public static void term() {
+    public static void term() throws customParserException {
         factor();
         while (tokensArray[index].toString().equals(Tokens.MULTIPLY.toString()) || tokensArray[index].toString().equals(Tokens.DIVIDE.toString())
                 || tokensArray[index].toString().equals(Tokens.DIV.toString()) || tokensArray[index].toString().equals(Tokens.MOD.toString())) {
@@ -404,42 +407,41 @@ public class Main {
 
     // factor function
     // factor → ( exp ) | name | value
-    public static void factor() {
+    public static void factor() throws customParserException {
         if (tokensArray[index].toString().equals(Tokens.LPAREN.toString())) {
             index++;
             exp();
             if (tokensArray[index].toString().equals(Tokens.RPAREN.toString())) {
                 index++;
             } else {
-                System.out.println("Expected right parenthesis after the expression but got " + tokensArray[index].toString() + " instead.");
-                System.exit(1);
+                throw new customParserException("Expected right parenthesis after the expression but got " + tokensArray[index].toString() + " instead.");
             }
         } else if (is_valid_name(tokensArray[index].toString()) && tokensArray[index].toString().matches("[a-zA-Z_$][a-zA-Z_$0-9]*")) {
             name();
-        } else if (tokensArray[index].toString().matches("[0-9]+")) {
+        } else if (tokensArray[index].toString().matches("-?\\d+")) {
             integer_value();
-        } else if (tokensArray[index].toString().matches("[0-9]+.[0-9]+")) {
+        } else if (tokensArray[index].toString().matches("-?\\d+(\\.\\d+)?")) {
             real_value();
         } else {
-            System.out.println("Expected name or value or expression but got " + tokensArray[index].toString() + " instead.");
-            System.exit(1);
+            throw new customParserException("Expected name or value or expression but got " + tokensArray[index].toString() + " instead.");
         }
     }
 
     // name function
     // letter ( letter | digit )*
-    public static void name() {
-        if (tokensArray[index].toString().matches("[a-zA-Z_$][a-zA-Z_$0-9]*") && is_valid_name(tokensArray[index].toString())) {
-            index++;
-        } else {
-            System.out.println("Expected name but got " + tokensArray[index].toString() + " instead.");
-            System.exit(1);
+    public static void name() throws customParserException {
+        if (is_valid_name(tokensArray[index].toString())) {
+            if (tokensArray[index].toString().matches("[a-zA-Z_$][a-zA-Z_$0-9]*")) {
+                index++;
+            } else {
+                throw new customParserException("Invalid name " + tokensArray[index].toString());
+            }
         }
     }
 
     // data_type function
     // data-type → integer | real | char
-    public static void data_type() {
+    public static void data_type() throws customParserException {
         if (tokensArray[index].toString().equals(Tokens.INTEGER.toString())) {
             index++;
         } else if (tokensArray[index].toString().equals(Tokens.REAL.toString())) {
@@ -447,14 +449,13 @@ public class Main {
         } else if (tokensArray[index].toString().equals(Tokens.CHAR.toString())) {
             index++;
         } else {
-            System.out.println("Expected data type but got " + tokensArray[index].toString() + " instead.");
-            System.exit(1);
+            throw new customParserException("Expected data type but got " + tokensArray[index].toString() + " instead.");
         }
     }
 
     // const_decl function
     // const-decl → const const-list | lambda
-    public static void const_decl() {
+    public static void const_decl() throws customParserException {
         // first case: const const-list aka not lambda
         if (tokensArray[index].toString().equals(Tokens.CONST.toString())) {
             index++;
@@ -471,7 +472,6 @@ public class Main {
             // case2: follow of const_decl function is the first of procedure_decl function if there is no var_decl function
             else if (tokensArray[index].toString().equals(Tokens.PROCEDURE.toString())) {
                 index++;
-                //todo
                 procedure_decl();
             }
             // case3: follow of const_decl function is the first of block function
@@ -479,8 +479,7 @@ public class Main {
                 index++;
                 block();
             } else {
-                System.out.println("Expected const or var or procedure or begin keyword but got " + tokensArray[index].toString() + " instead.");
-                System.exit(1);
+                throw new customParserException("Expected const or var or procedure or begin keyword but got " + tokensArray[index].toString() + " instead.");
             }
         }
     }
@@ -488,66 +487,67 @@ public class Main {
 
     // const_list function
     // const-list → (name = value ;)*
-    public static void const_list() {
+    public static void const_list() throws customParserException {
         name();
-        if (tokensArray[index].toString().equals(Tokens.EQUALS.toString())) {
+        if (tokensArray[index].toString().equals(Tokens.EQUALS.toString())) { // =
             index++;
-            value();
+            if (tokensArray[index + 1].toString().equals(Tokens.DOT.toString())) {
+                str = tokensArray[index].toString() + tokensArray[index + 1].toString() + tokensArray[index + 2].toString();
+                index = index + 2;
+                value();
+            } else {
+                value();
+            }
             if (tokensArray[index].toString().equals(Tokens.SEMICOLON.toString())) {
                 index++;
-                if (tokensArray[index].toString().equals(Tokens.VAR.toString())) {
+                if (tokensArray[index].toString().equals(Tokens.VAR.toString()) || tokensArray[index].toString().equals(Tokens.PROCEDURE.toString())) {
                     return;
                 }
                 const_list();
             } else {
-                System.out.println("Expected semicolon after the value but got " + tokensArray[index].toString() + " instead.");
-                System.exit(1);
+                throw new customParserException("Expected semicolon after the value but got " + tokensArray[index].toString() + " instead.");
             }
         } else {
-            System.out.println("Expected assign operator after the name but got " + tokensArray[index].toString() + " instead.");
-            System.exit(1);
+            throw new customParserException("Expected equal sign after the name but got " + tokensArray[index].toString() + " instead.");
         }
     }
 
     // value function
     // value → integer-value | real-value
-    public static void value() {
-        if (tokensArray[index].toString().matches("[0-9]+")) {
+    public static void value() throws customParserException {
+        if (tokensArray[index].toString().matches("-?\\d+")) {
             integer_value();
-        } else if (tokensArray[index].toString().matches("[0-9]+.[0-9]+")) {
+        } else if (str.matches("-?\\d+(\\.\\d+)?")) {
             index++;
             real_value();
         } else {
-            System.out.println("Expected integer or real value but got " + tokensArray[index].toString() + " instead.");
-            System.exit(1);
+            throw new customParserException("Expected integer or real value but got " + tokensArray[index].toString() + " instead.");
         }
     }
 
     // integer_value function
     // integer-value → digit (digit)*
-    public static void integer_value() {
-        if (tokensArray[index].toString().matches("[0-9]+")) {
+    public static void integer_value() throws customParserException {
+        if (tokensArray[index].toString().matches("-?\\d+")) {
             index++;
         } else {
-            System.out.println("Expected integer value but got " + tokensArray[index].toString() + " instead.");
-            System.exit(1);
+            throw new customParserException("Expected integer value but got " + tokensArray[index].toString() + " instead.");
         }
     }
 
     // real_value function
     // real-value → digit (digit)* . digit (digit)*
-    public static void real_value() {
-        if (tokensArray[index].toString().matches("[0-9]+.[0-9]+")) {
+    public static void real_value() throws customParserException {
+        if (tokensArray[index].toString().matches("-?\\d+(\\.\\d+)?")) {
             index++;
         } else {
-            System.out.println("Expected real value but got " + tokensArray[index].toString() + " instead.");
-            System.exit(1);
+            throw new customParserException("Expected real value but got " + tokensArray[index].toString() + " instead.");
         }
     }
 
     // while_stmt function
     // while-stmt → while condition do stmt-list end
-    public static void while_stmt() {
+    public static void while_stmt() throws customParserException {
         if (tokensArray[index].toString().equals(Tokens.WHILE.toString())) {
             index++;
             condition();
@@ -557,22 +557,19 @@ public class Main {
                 if (tokensArray[index].toString().equals(Tokens.END.toString())) {
                     index++;
                 } else {
-                    System.out.println("Expected end keyword after the while statement but got " + tokensArray[index].toString() + " instead.");
-                    System.exit(1);
+                    throw new customParserException("Expected end keyword after the while statement but got " + tokensArray[index].toString() + " instead.");
                 }
             } else {
-                System.out.println("Expected do keyword after the condition but got " + tokensArray[index].toString() + " instead.");
-                System.exit(1);
+                throw new customParserException("Expected do keyword after the condition but got " + tokensArray[index].toString() + " instead.");
             }
         } else {
-            System.out.println("Expected while keyword but got " + tokensArray[index].toString() + " instead.");
-            System.exit(1);
+            throw new customParserException("Expected while keyword but got " + tokensArray[index].toString() + " instead.");
         }
     }
 
     // repeat_stmt function
     // repeat-stmt → loop stmt-list until condition
-    public static void repeat_stmt() {
+    public static void repeat_stmt() throws customParserException {
         if (tokensArray[index].toString().equals(Tokens.LOOP.toString())) {
             index++;
             stmt_list();
@@ -580,18 +577,16 @@ public class Main {
                 index++;
                 condition();
             } else {
-                System.out.println("Expected until keyword after the stmt-list but got " + tokensArray[index].toString() + " instead.");
-                System.exit(1);
+                throw new customParserException("Expected until keyword after the stmt-list but got " + tokensArray[index].toString() + " instead.");
             }
         } else {
-            System.out.println("Expected loop keyword but got " + tokensArray[index].toString() + " instead.");
-            System.exit(1);
+            throw new customParserException("Expected loop keyword but got " + tokensArray[index].toString() + " instead.");
         }
     }
 
     // read_stmt function
     // read-stmt → readint ( name-list )  | readreal ( name-list ) | readchar ( name-list ) | readln
-    public static void read_stmt() {
+    public static void read_stmt() throws customParserException {
         if (tokensArray[index].toString().equals(Tokens.READINT.toString())) {
             index++;
             if (tokensArray[index].toString().equals(Tokens.LPAREN.toString())) {
@@ -600,12 +595,10 @@ public class Main {
                 if (tokensArray[index].toString().equals(Tokens.RPAREN.toString())) {
                     index++;
                 } else {
-                    System.out.println("Expected right parenthesis after the namelist but got " + tokensArray[index].toString() + " instead.");
-                    System.exit(1);
+                    throw new customParserException("Expected right parenthesis after the namelist but got " + tokensArray[index].toString() + " instead.");
                 }
             } else {
-                System.out.println("Expected left parenthesis after the readint keyword but got " + tokensArray[index].toString() + " instead.");
-                System.exit(1);
+                throw new customParserException("Expected left parenthesis after the readint keyword but got " + tokensArray[index].toString() + " instead.");
             }
         } else if ((tokensArray[index].toString() + tokensArray[index + 1].toString()).equals(Tokens.READREAL.toString())) {
             index = index + 2;
@@ -615,12 +608,10 @@ public class Main {
                 if (tokensArray[index].toString().equals(Tokens.RPAREN.toString())) {
                     index++;
                 } else {
-                    System.out.println("Expected right parenthesis after the namelist but got " + tokensArray[index].toString() + " instead.");
-                    System.exit(1);
+                    throw new customParserException("Expected right parenthesis after the namelist but got " + tokensArray[index].toString() + " instead.");
                 }
             } else {
-                System.out.println("Expected left parenthesis after the readreal keyword but got " + tokensArray[index].toString() + " instead.");
-                System.exit(1);
+                throw new customParserException("Expected left parenthesis after the readreal keyword but got " + tokensArray[index].toString() + " instead.");
             }
         } else if ((tokensArray[index].toString() + tokensArray[index + 1].toString()).equals(Tokens.READCHAR.toString())) {
             index = index + 2;
@@ -630,24 +621,21 @@ public class Main {
                 if (tokensArray[index].toString().equals(Tokens.RPAREN.toString())) {
                     index++;
                 } else {
-                    System.out.println("Expected right parenthesis after the namelist but got " + tokensArray[index].toString() + " instead.");
-                    System.exit(1);
+                    throw new customParserException("Expected right parenthesis after the namelist but got " + tokensArray[index].toString() + " instead.");
                 }
             } else {
-                System.out.println("Expected left parenthesis after the readchar keyword but got " + tokensArray[index].toString() + " instead.");
-                System.exit(1);
+                throw new customParserException("Expected left parenthesis after the readchar keyword but got " + tokensArray[index].toString() + " instead.");
             }
         } else if ((tokensArray[index].toString()).equals(Tokens.READLN.toString())) {
             index++;
         } else {
-            System.out.println("Expected readint or readreal or readchar or readln keyword but got " + tokensArray[index].toString() + " instead.");
-            System.exit(1);
+            throw new customParserException("Expected readint or readreal or readchar or readln keyword but got " + tokensArray[index].toString() + " instead.");
         }
     }
 
     // write_stmt function
     // write-stmt → writeint ( name_list ) | writereal ( name_list ) | writechar ( name_list ) | writeln
-    public static void write_stmt() {
+    public static void write_stmt() throws customParserException {
         if ((tokensArray[index].toString()).equals(Tokens.WRITEINT.toString())) {
             index++;
             if (tokensArray[index].toString().equals(Tokens.LPAREN.toString())) {
@@ -656,12 +644,10 @@ public class Main {
                 if (tokensArray[index].toString().equals(Tokens.RPAREN.toString())) {
                     index++;
                 } else {
-                    System.out.println("Expected right parenthesis after the namelist but got " + tokensArray[index].toString() + " instead.");
-                    System.exit(1);
+                    throw new customParserException("Expected right parenthesis after the namelist but got " + tokensArray[index].toString() + " instead.");
                 }
             } else {
-                System.out.println("Expected left parenthesis after the writeint keyword but got " + tokensArray[index].toString() + " instead.");
-                System.exit(1);
+                throw new customParserException("Expected left parenthesis after the writeint keyword but got " + tokensArray[index].toString() + " instead.");
             }
         } else if ((tokensArray[index].toString() + tokensArray[index + 1].toString()).equals(Tokens.WRITEREAL.toString())) {
             index = index + 2;
@@ -671,12 +657,10 @@ public class Main {
                 if (tokensArray[index].toString().equals(Tokens.RPAREN.toString())) {
                     index++;
                 } else {
-                    System.out.println("Expected right parenthesis after the namelist but got " + tokensArray[index].toString() + " instead.");
-                    System.exit(1);
+                    throw new customParserException("Expected right parenthesis after the namelist but got " + tokensArray[index].toString() + " instead.");
                 }
             } else {
-                System.out.println("Expected left parenthesis after the writereal keyword but got " + tokensArray[index].toString() + " instead.");
-                System.exit(1);
+                throw new customParserException("Expected left parenthesis after the writereal keyword but got " + tokensArray[index].toString() + " instead.");
             }
         } else if ((tokensArray[index].toString() + tokensArray[index + 1].toString()).equals(Tokens.WRITECHAR.toString())) {
             index = index + 2;
@@ -686,24 +670,21 @@ public class Main {
                 if (tokensArray[index].toString().equals(Tokens.RPAREN.toString())) {
                     index++;
                 } else {
-                    System.out.println("Expected right parenthesis after the namelist but got " + tokensArray[index].toString() + " instead.");
-                    System.exit(1);
+                    throw new customParserException("Expected right parenthesis after the namelist but got " + tokensArray[index].toString() + " instead.");
                 }
             } else {
-                System.out.println("Expected left parenthesis after the writechar keyword but got " + tokensArray[index].toString() + " instead.");
-                System.exit(1);
+                throw new customParserException("Expected left parenthesis after the writechar keyword but got " + tokensArray[index].toString() + " instead.");
             }
         } else if (tokensArray[index].toString().equals(Tokens.WRITELN.toString())) {
             index++;
         } else {
-            System.out.println("Expected writeint or writereal or writechar or writeln keyword but got " + tokensArray[index].toString() + " instead.");
-            System.exit(1);
+            throw new customParserException("Expected writeint or writereal or writechar or writeln keyword but got " + tokensArray[index].toString() + " instead.");
         }
     }
 
     // name_list function
     // name-list → name (, name)*
-    public static void name_list() {
+    public static void name_list() throws customParserException {
         name();
         while (tokensArray[index].toString().equals(Tokens.COMMA.toString())) {
             index++;
@@ -713,7 +694,7 @@ public class Main {
 
     // write_list function
     // write-list → write-item (, write-item)*
-    public static void write_list() {
+    public static void write_list() throws customParserException {
         write_item();
         while (tokensArray[index].toString().equals(Tokens.COMMA.toString())) {
             index++;
@@ -723,22 +704,21 @@ public class Main {
 
     // write_item function
     // write-item → name | value
-    public static void write_item() {
+    public static void write_item() throws customParserException {
         if (is_valid_name(tokensArray[index].toString()) && tokensArray[index].toString().matches("[a-zA-Z_$][a-zA-Z_$0-9]*")) {
             name();
-        } else if (tokensArray[index].toString().matches("[0-9]+")) {
+        } else if (tokensArray[index].toString().matches("-?\\d+")) {
             integer_value();
-        } else if (tokensArray[index].toString().matches("[0-9]+.[0-9]+")) {
+        } else if (tokensArray[index].toString().matches("-?\\d+(\\.\\d+)?")) {
             real_value();
         } else {
-            System.out.println("Expected name or value but got " + tokensArray[index].toString() + " instead.");
-            System.exit(1);
+            throw new customParserException("Expected name or value but got " + tokensArray[index].toString() + " instead.");
         }
     }
 
     // relational_oper function
     // relational-oper → < | > | = | <= | >= | |=
-    public static void relational_oper() {
+    public static void relational_oper() throws customParserException {
         if ((tokensArray[index].toString() + tokensArray[index + 1].toString()).equals(Tokens.OR_EQUALS.toString())) { // |=
             index = index + 2;
         } else if ((tokensArray[index].toString() + tokensArray[index + 1].toString()).equals(Tokens.SMALLER_THAN_OR_EQUAL.toString())) { // <=
@@ -752,29 +732,27 @@ public class Main {
         } else if (tokensArray[index].toString().equals(Tokens.EQUALS.toString())) { // =
             index++;
         } else { // error
-            System.out.println("Expected relational operator but got " + tokensArray[index].toString() + " instead.");
-            System.exit(1);
+            throw new customParserException("Expected relational operator but got " + tokensArray[index].toString() + " instead.");
         }
     }
 
     // name-value function
     // name-value → name | value
-    public static void name_value() {
+    public static void name_value() throws customParserException {
         if (tokensArray[index].toString().matches("[a-zA-Z_$][a-zA-Z_$0-9]*")) {
             index++;
-        } else if (tokensArray[index].toString().matches("[0-9]+")) {
+        } else if (tokensArray[index].toString().matches("-?\\d+")) {
             index++;
-        } else if (tokensArray[index].toString().matches("[0-9]+.[0-9]+")) {
+        } else if (tokensArray[index].toString().matches("-?\\d+(\\.\\d+)?")) {
             index++;
         } else {
-            System.out.println("Expected name or value but got " + tokensArray[index].toString() + " instead.");
-            System.exit(1);
+            throw new customParserException("Expected name or value but got " + tokensArray[index].toString() + " instead.");
         }
     }
 
     // condition function
     // condition → name-value relational-oper name-value
-    public static void condition() {
+    public static void condition() throws customParserException {
         name_value();
         relational_oper();
         name_value();
@@ -783,7 +761,7 @@ public class Main {
     // call_stmt function
     // call-stmt → call name
     // name is procedure name
-    public static void call_stmt() {
+    public static void call_stmt() throws customParserException {
         if (tokensArray[index].toString().equals(Tokens.CALL.toString())) {
             index++;
             if (is_valid_name(tokensArray[index].toString())) {
@@ -791,44 +769,40 @@ public class Main {
                 // todo: check is the procedure is declared before or not
                 // function to check if the procedure is declared before or not
             } else {
-                System.out.println("Invalid name " + tokensArray[index].toString());
-                System.exit(1);
+                throw new customParserException("Invalid name " + tokensArray[index].toString());
             }
 
 
         } else {
-            System.out.println("Expected call keyword but got " + tokensArray[index].toString() + " instead.");
-            System.exit(1);
+            throw new customParserException("Expected call keyword but got " + tokensArray[index].toString() + " instead.");
         }
     }
 
     // exit_stmt function
     // exit-stmt → exit
-    public static void exit_stmt() {
+    public static void exit_stmt() throws customParserException {
         if (tokensArray[index].toString().equals(Tokens.EXIT.toString())) {
             index++;
         } else {
-            System.out.println("Expected exit keyword but got " + tokensArray[index].toString() + " instead.");
-            System.exit(1);
+            throw new customParserException("Expected exit keyword but got " + tokensArray[index].toString() + " instead.");
         }
     }
 
     // add_oper function
     // add-oper → + | -
-    public static void add_oper() {
+    public static void add_oper() throws customParserException {
         if (tokensArray[index].toString().equals(Tokens.PLUS.toString())) {
             index++;
         } else if (tokensArray[index].toString().equals(Tokens.MINUS.toString())) {
             index++;
         } else {
-            System.out.println("Expected add operator but got " + tokensArray[index].toString() + " instead.");
-            System.exit(1);
+            throw new customParserException("Expected add operator but got " + tokensArray[index].toString() + " instead.");
         }
     }
 
     // mul_oper function
     // mul-oper → * | / | mod | div
-    public static void mul_oper() {
+    public static void mul_oper() throws customParserException {
         if (tokensArray[index].toString().equals(Tokens.MULTIPLY.toString())) {
             index++;
         } else if (tokensArray[index].toString().equals(Tokens.DIVIDE.toString())) {
@@ -838,14 +812,13 @@ public class Main {
         } else if (tokensArray[index].toString().equals(Tokens.DIV.toString())) {
             index++;
         } else {
-            System.out.println("Expected mul operator but got " + tokensArray[index].toString() + " instead.");
-            System.exit(1);
+            throw new customParserException("Expected mul operator but got " + tokensArray[index].toString() + " instead.");
         }
     }
 
     // if_stmt function
     // if-stmt → if condition then stmt-list elseif-part else-part end
-    public static void if_stmt() {
+    public static void if_stmt() throws customParserException {
         if (tokensArray[index].toString().equals(Tokens.IF.toString())) {
             index++;
             condition();
@@ -857,22 +830,19 @@ public class Main {
                 if (tokensArray[index].toString().equals(Tokens.END.toString())) {
                     index++;
                 } else {
-                    System.out.println("Expected end keyword after the if statement but got " + tokensArray[index].toString() + " instead.");
-                    System.exit(1);
+                    throw new customParserException("Expected end keyword after the if statement but got " + tokensArray[index].toString() + " instead.");
                 }
             } else {
-                System.out.println("Expected then keyword after the condition but got " + tokensArray[index].toString() + " instead.");
-                System.exit(1);
+                throw new customParserException("Expected then keyword after the condition but got " + tokensArray[index].toString() + " instead.");
             }
         } else {
-            System.out.println("Expected if keyword but got " + tokensArray[index].toString() + " instead.");
-            System.exit(1);
+            throw new customParserException("Expected if keyword but got " + tokensArray[index].toString() + " instead.");
         }
     }
 
     // elseif_part function
     // elseif-part → (elseif condition then stmt-list)*
-    public static void elseif_part() {
+    public static void elseif_part() throws customParserException {
         if ((tokensArray[index].toString() + tokensArray[index + 1].toString()).equals(Tokens.ELSEIF.toString())) {
             while ((tokensArray[index].toString() + tokensArray[index + 1].toString()).equals(Tokens.ELSEIF.toString())) {
                 index = index + 2;
@@ -881,8 +851,7 @@ public class Main {
                     index++;
                     stmt_list();
                 } else {
-                    System.out.println("Expected then keyword after the condition but got " + tokensArray[index].toString() + " instead.");
-                    System.exit(1);
+                    throw new customParserException("Expected then keyword after the condition but got " + tokensArray[index].toString() + " instead.");
                 }
             }
         }
@@ -890,7 +859,7 @@ public class Main {
 
     // else_part function
     // else-part → else stmt-list | lambda
-    public static void else_part() {
+    public static void else_part() throws customParserException {
         if (tokensArray[index].toString().equals(Tokens.ELSE.toString())) {
             index++;
             stmt_list();
@@ -902,6 +871,9 @@ public class Main {
     // is_valid_name function, to check if the name is valid or not or if it's a reserved word
     public static boolean is_valid_name(String s) {
         boolean isValid = false;
+        if (index >= tokensArray.length - 1) {
+            return false;
+        }
         if (!(tokensArray[index].toString() + tokensArray[index + 1].toString()).equals(Tokens.MODULE.toString()) && !tokensArray[index].equals(Tokens.CONST.toString()) &&
                 !tokensArray[index].equals(Tokens.VAR.toString()) && !tokensArray[index].equals(Tokens.INTEGER.toString()) &&
                 !tokensArray[index].equals(Tokens.BEGIN.toString()) && !tokensArray[index].equals(Tokens.DIV.toString()) &&
@@ -931,6 +903,12 @@ public class Main {
             isValid = false;
         }
         return isValid;
+    }
+
+    private static class customParserException extends Exception {
+        public customParserException(String message) {
+            super(message);
+        }
     }
 }
 
